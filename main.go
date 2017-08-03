@@ -434,8 +434,19 @@ func GetOptions() *Options {
 			`user`,
 			`host`)
 
+		// open the out file for writing
+		t := time.Now()
+		outfile, errdir := os.Create("/" + outputdir + "/" + t.Format("2006-01-02-15_04_05.sql"))
+		if errdir != nil {
+			panic(errdir)
+		}
+
+		defer outfile.Close()
+
 		cmdOut, _ := cmd.StdoutPipe()
 		cmdErr, _ := cmd.StderrPipe()
+
+		cmd.Stdout = outfile
 
 		cmd.Start()
 
