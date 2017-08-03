@@ -348,6 +348,9 @@ func GetOptions() *Options {
 	var hostname string
 	flag.StringVar(&hostname, "hostname", "localhost", "Hostname of the mysql server to connect to")
 
+	var bind string
+	flag.StringVar(&bind, "bind", "3306", "Port of the mysql server to connect to")
+
 	var username string
 	flag.StringVar(&username, "username", "root", "username of the mysql server to connect to")
 
@@ -376,22 +379,15 @@ func GetOptions() *Options {
 	flag.IntVar(&verbosity, "verbosity", 2, "0 = only errors, 1 = important things, 2 = all")
 
 	var mysqldumppath string
-	flag.StringVar(&mysqldumppath, "mysqldump-path", "", "Absolute path for mysqldump executable. Default value is \"/usr/bin/mysqldump\" for linux (without quotes)")
+	flag.StringVar(&mysqldumppath, "mysqldump-path", "/usr/bin/mysqldump", "Absolute path for mysqldump executable.")
 
 	var outputdir string
 	flag.StringVar(&outputdir, "output-dir", "", "Default is the value of os.Getwd(). The backup files will be placed to output-dir /{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql")
-
-	var bind string
-	flag.StringVar(&bind, "bind", "3306", "Port of the mysql server to connect to")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
 
 	flag.Parse()
-
-	if mysqldumppath == "" {
-		mysqldumppath = "/usr/bin/mysqldump"
-	}
 
 	if outputdir == "" {
 		dir, err := os.Getwd()
