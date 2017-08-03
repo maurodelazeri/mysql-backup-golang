@@ -365,10 +365,15 @@ func generateSingleFileBackup(options Options, db string) {
 	cmd.Wait()
 
 	printMessage("mysqldump output is : "+string(output), options.Verbosity, Info)
+
 	if string(err) != "" {
 		printMessage("mysqldump error is: "+string(err), options.Verbosity, Error)
 		os.Exit(4)
 	}
+
+	printMessage("Ziping backup file : "+db, options.Verbosity, Info)
+	files := []string{filename}
+	ZipFiles(filename+".zip", files)
 
 	printMessage("Single file backup successfull : "+db, options.Verbosity, Info)
 }
@@ -426,11 +431,21 @@ func ZipFiles(filename string, files []string) error {
 		if err != nil {
 			return err
 		}
+
+		// Removing the original file after zipping it
+		err = os.Remove(file)
+
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
 	}
+
 	return nil
 }
 
-// Load json file with the configuration to rotate the backup
+// LoadConfiguration load json file with configurations with default configuration, but gets overwrite in case of the user specify manually
 func LoadConfiguration(file string) Config {
 	var config Config
 	configFile, err := os.Open(file)
@@ -456,7 +471,7 @@ func GetOptions() *Options {
 	flag.StringVar(&username, "username", "root", "username of the mysql server to connect to")
 
 	var password string
-	flag.StringVar(&password, "password", "2Eba0af2", "password of the mysql server to connect to")
+	flag.StringVar(&password, "password", "1234", "password of the mysql server to connect to")
 
 	var databases string
 	flag.StringVar(&databases, "databases", "", "list of databases as comma seperated values to dump")
@@ -485,14 +500,14 @@ func GetOptions() *Options {
 	var outputdir string
 	flag.StringVar(&outputdir, "output-dir", "", "Default is the value of os.Getwd(). The backup files will be placed to output-dir /{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql")
 
-	var rotation_daily int
-	flag.IntVar(&rotation_daily, "rotation_daily", 5, "Number of backups on the daily rotation")
+	var rotationdaily int
+	flag.IntVar(&rotationdaily, "rotation-daily", 5, "Number of backups on the daily rotation")
 
-	var rotation_weekly int
-	flag.IntVar(&rotation_weekly, "rotation_weekly", 2, "Number of backups on the weekly rotation")
+	var rotationweekly int
+	flag.IntVar(&rotationweekly, "rotation-weekly", 2, "Number of backups on the weekly rotation")
 
-	var rotation_montly int
-	flag.IntVar(&rotation_montly, "rotation_montly", 1, "Number of backups on the montly rotation")
+	var rotationmontly int
+	flag.IntVar(&rotationmontly, "rotation-montly", 1, "Number of backups on the montly rotation")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
