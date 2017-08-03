@@ -1,21 +1,23 @@
 package main
 
 import (
+	"archive/zip"
 	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
-
 	"github.com/fatih/color"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -55,6 +57,16 @@ type Options struct {
 	OutputDirectory        string
 	DefaultsProvidedByUser bool
 	ExecutionStartDate     time.Time
+}
+
+// Config model for backup bucket rotation
+type Config struct {
+	Database struct {
+		Host     string `json:"host"`
+		Password string `json:"password"`
+	} `json:"database"`
+	Host string `json:"host"`
+	Port string `json:"port"`
 }
 
 func main() {
@@ -197,6 +209,12 @@ func generateTableBackup(options Options, db string, table Table) {
 			args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 		}
 
+		timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
+		filename := path.Join(options.OutputDirectory, db, fmt.Sprintf("%s_%s%d_%s.sql", db, table.TableName, index, timestamp))
+		_ = os.Mkdir(path.Dir(filename), os.ModePerm)
+
+		args = append(args, fmt.Sprintf("-r%s", filename))
+
 		args = append(args, fmt.Sprintf("--where=1=1 LIMIT %d, %d", counter, options.BatchSize))
 
 		args = append(args, db)
@@ -240,6 +258,12 @@ func generateSchemaBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
+	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
+	filename := path.Join(options.OutputDirectory, db, fmt.Sprintf("%s_%s_%s.sql", db, "SCHEMA", timestamp))
+	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
+
+	args = append(args, fmt.Sprintf("-r%s", filename))
+
 	args = append(args, db)
 
 	printMessage("mysqldump is being executed with parameters : "+strings.Join(args, " "), options.Verbosity, Info)
@@ -279,6 +303,12 @@ func generateSingleFileDataBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
+	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
+	filename := path.Join(options.OutputDirectory, db, fmt.Sprintf("%s_%s_%s.sql", db, "DATA", timestamp))
+	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
+
+	args = append(args, fmt.Sprintf("-r%s", filename))
+
 	args = append(args, db)
 
 	printMessage("mysqldump is being executed with parameters : "+strings.Join(args, " "), options.Verbosity, Info)
@@ -314,6 +344,12 @@ func generateSingleFileBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
+	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
+	filename := path.Join(options.OutputDirectory, db, fmt.Sprintf("%s_%s_%s.sql", db, "ALL", timestamp))
+	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
+
+	args = append(args, fmt.Sprintf("-r%s", filename))
+
 	args = append(args, db)
 
 	printMessage("mysqldump is being executed with parameters : "+strings.Join(args, " "), options.Verbosity, Info)
@@ -346,6 +382,67 @@ func getTotalRowCount(tables []Table) int {
 	return result
 }
 
+// ZipFiles compresses one or many files into a single zip archive file
+func ZipFiles(filename string, files []string) error {
+
+	newfile, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer newfile.Close()
+
+	zipWriter := zip.NewWriter(newfile)
+	defer zipWriter.Close()
+
+	// Add files to zip
+	for _, file := range files {
+
+		zipfile, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+		defer zipfile.Close()
+
+		// Get the file information
+		info, err := zipfile.Stat()
+		if err != nil {
+			return err
+		}
+
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
+
+		// Change to deflate to gain better compression
+		// see http://golang.org/pkg/archive/zip/#pkg-constants
+		header.Method = zip.Deflate
+
+		writer, err := zipWriter.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(writer, zipfile)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Load json file with the configuration to rotate the backup
+func LoadConfiguration(file string) Config {
+	var config Config
+	configFile, err := os.Open(file)
+	defer configFile.Close()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	jsonParser := json.NewDecoder(configFile)
+	jsonParser.Decode(&config)
+	return config
+}
+
 // GetOptions creates Options type from Commandline arguments
 func GetOptions() *Options {
 
@@ -359,7 +456,7 @@ func GetOptions() *Options {
 	flag.StringVar(&username, "username", "root", "username of the mysql server to connect to")
 
 	var password string
-	flag.StringVar(&password, "password", "XXXX", "password of the mysql server to connect to")
+	flag.StringVar(&password, "password", "2Eba0af2", "password of the mysql server to connect to")
 
 	var databases string
 	flag.StringVar(&databases, "databases", "", "list of databases as comma seperated values to dump")
@@ -387,6 +484,15 @@ func GetOptions() *Options {
 
 	var outputdir string
 	flag.StringVar(&outputdir, "output-dir", "", "Default is the value of os.Getwd(). The backup files will be placed to output-dir /{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql")
+
+	var rotation_daily int
+	flag.IntVar(&rotation_daily, "rotation_daily", 5, "Number of backups on the daily rotation")
+
+	var rotation_weekly int
+	flag.IntVar(&rotation_weekly, "rotation_weekly", 2, "Number of backups on the weekly rotation")
+
+	var rotation_montly int
+	flag.IntVar(&rotation_montly, "rotation_montly", 1, "Number of backups on the montly rotation")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
@@ -434,19 +540,8 @@ func GetOptions() *Options {
 			`user`,
 			`host`)
 
-		// open the out file for writing
-		t := time.Now()
-		outfile, errdir := os.Create("/" + outputdir + "/" + t.Format("2006-01-02-15_04_05.sql"))
-		if errdir != nil {
-			panic(errdir)
-		}
-
-		defer outfile.Close()
-
 		cmdOut, _ := cmd.StdoutPipe()
 		cmdErr, _ := cmd.StderrPipe()
-
-		cmd.Stdout = outfile
 
 		cmd.Start()
 
