@@ -187,6 +187,7 @@ func generateTableBackup(options Options, db string, table Table) {
 		var args []string
 		args = append(args, fmt.Sprintf("-h%s", options.HostName))
 		args = append(args, fmt.Sprintf("-u%s", options.UserName))
+		args = append(args, fmt.Sprintf("-p%s", options.Password))
 
 		args = append(args, "--no-create-db")
 		args = append(args, "--skip-triggers")
@@ -213,6 +214,7 @@ func generateTableBackup(options Options, db string, table Table) {
 		cmd.Wait()
 
 		printMessage("mysqldump output is : "+string(output), options.Verbosity, Info)
+
 		if string(err) != "" {
 			printMessage("mysqldump error is: "+string(err), options.Verbosity, Error)
 			os.Exit(4)
@@ -230,6 +232,7 @@ func generateSchemaBackup(options Options, db string) {
 	var args []string
 	args = append(args, fmt.Sprintf("-h%s", options.HostName))
 	args = append(args, fmt.Sprintf("-u%s", options.UserName))
+	args = append(args, fmt.Sprintf("-p%s", options.Password))
 
 	args = append(args, "--no-data")
 
@@ -266,6 +269,7 @@ func generateSingleFileDataBackup(options Options, db string) {
 	var args []string
 	args = append(args, fmt.Sprintf("-h%s", options.HostName))
 	args = append(args, fmt.Sprintf("-u%s", options.UserName))
+	args = append(args, fmt.Sprintf("-p%s", options.Password))
 
 	args = append(args, "--no-create-db")
 	args = append(args, "--skip-triggers")
@@ -415,7 +419,7 @@ func GetOptions() *Options {
 		cmd := exec.Command(opts.MySQLDumpPath,
 			`-h127.0.0.1`,
 			`-uroot`,
-			`-pXXXXX`,
+			`-pXXXX`,
 			`--no-create-db`,
 			`--skip-triggers`,
 			`--no-create-info`,
@@ -437,6 +441,7 @@ func GetOptions() *Options {
 
 		output, _ := ioutil.ReadAll(cmdOut)
 		err, _ := ioutil.ReadAll(cmdErr)
+
 		cmd.Wait()
 
 		printMessage("mysqldump output is : "+string(output), opts.Verbosity, Info)
