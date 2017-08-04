@@ -39,11 +39,12 @@ type Table struct {
 
 // Options model for commandline arguments
 type Options struct {
-	HostName  string
-	Bind      string
-	UserName  string
-	Password  string
-	Databases []string
+	HostName          string
+	Bind              string
+	UserName          string
+	Password          string
+	Databases         []string
+	ExcludedDatabases []string
 
 	DatabaseRowCountTreshold int
 	TableRowCountTreshold    int
@@ -57,6 +58,10 @@ type Options struct {
 	OutputDirectory        string
 	DefaultsProvidedByUser bool
 	ExecutionStartDate     time.Time
+
+	DailyRotation  int
+	WeeklyRotation int
+	MontlyRotation int
 }
 
 // Config model for backup bucket rotation
@@ -143,8 +148,76 @@ func GetTables(hostname string, bind string, username string, password string, d
 	return result
 }
 
+// GetDatabaseList retrives list of databases on mysql
+func GetDatabaseList(hostname string, bind string, username string, password string, verbosity int) []string {
+	printMessage("Getting databases : "+hostname, verbosity, Info)
+
+	//	db, err := sql.Open("mysql", username+":"+password+"@tcp("+hostname+":"+bind+")")
+	db, err := sql.Open("mysql", username+":"+password+"@tcp("+hostname+":"+bind+")/mysql")
+	checkErr(err)
+
+	defer db.Close()
+
+	rows, err := db.Query("SHOW DATABASES")
+	checkErr(err)
+
+	var result []string
+
+	for rows.Next() {
+		var databaseName string
+
+		err = rows.Scan(&databaseName)
+		checkErr(err)
+
+		result = append(result, databaseName)
+	}
+
+	printMessage(strconv.Itoa(len(result))+" databases retrived : "+hostname, verbosity, Info)
+
+	return result
+}
+
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	var x = []int{90, 15, 81, 87, 47, 59, 81, 18, 25, 40, 56, 8}
+		var x = []int{90, 15, 81, 87, 47, 59, 81, 18, 25, 40, 56, 8}
+	
+	for i := len(x) - 1; i >= 0; i-- {
+		if x[i] % 2 == 0 {
+			x = append(x[:i], x[i+1:]...)
+		}
+	}
+	
+	fmt.Println(x)
+}
+
+
 // NewOptions returns a new Options instance.
-func NewOptions(hostname string, bind string, username string, password string, databases string, databasetreshold int, tablethreshold int, batchsize int, forcesplit bool, additionals string, verbosity int, mysqldumppath string, outputDirectory string, defaultsProvidedByUser bool) *Options {
+func NewOptions(hostname string, bind string, username string, password string, databases string, excludeddatabases string, databasetreshold int, tablethreshold int, batchsize int, forcesplit bool, additionals string, verbosity int, mysqldumppath string, outputDirectory string, defaultsProvidedByUser bool, dailyrotation int, weeklyrotation int, montlyrotation int) *Options {
+
+	excludeddbs := []string{}
+
+	if databases == "--all-databases" {
+
+		dbslist := GetDatabaseList(hostname, bind, username, password, verbosity)
+
+		databases = strings.Join(dbslist, ",")
+		fmt.Println(databases)
+
+
+		excludeddatabases = strings.Replace(excludeddatabases, " ", "", -1)
+		excludeddatabases = strings.Replace(excludeddatabases, " , ", ",", -1)
+		excludeddatabases = strings.Replace(excludeddatabases, ", ", ",", -1)
+		excludeddatabases = strings.Replace(excludeddatabases, " ,", ",", -1)
+		excludeddbs := strings.Split(excludeddatabases, ",")
+		excludeddbs = removeDuplicates(excludeddbs)
+	}
+
 	databases = strings.Replace(databases, " ", "", -1)
 	databases = strings.Replace(databases, " , ", ",", -1)
 	databases = strings.Replace(databases, ", ", ",", -1)
@@ -158,6 +231,7 @@ func NewOptions(hostname string, bind string, username string, password string, 
 		UserName:                 username,
 		Password:                 password,
 		Databases:                dbs,
+		ExcludedDatabases:        excludeddbs,
 		DatabaseRowCountTreshold: databasetreshold,
 		TableRowCountTreshold:    tablethreshold,
 		BatchSize:                batchsize,
@@ -168,6 +242,9 @@ func NewOptions(hostname string, bind string, username string, password string, 
 		OutputDirectory:          outputDirectory,
 		DefaultsProvidedByUser:   defaultsProvidedByUser,
 		ExecutionStartDate:       time.Now(),
+		DailyRotation:            dailyrotation,
+		WeeklyRotation:           weeklyrotation,
+		MontlyRotation:           montlyrotation,
 	}
 }
 
@@ -238,6 +315,10 @@ func generateTableBackup(options Options, db string, table Table) {
 			os.Exit(4)
 		}
 
+		printMessage("Ziping table file : "+filename, options.Verbosity, Info)
+		files := []string{filename}
+		ZipFiles(filename+".zip", files)
+
 		index++
 	}
 
@@ -279,10 +360,15 @@ func generateSchemaBackup(options Options, db string) {
 	cmd.Wait()
 
 	printMessage("mysqldump output is : "+string(output), options.Verbosity, Info)
+
 	if string(err) != "" {
 		printMessage("mysqldump error is: "+string(err), options.Verbosity, Error)
 		os.Exit(4)
 	}
+
+	printMessage("Ziping schema file : "+filename, options.Verbosity, Info)
+	files := []string{filename}
+	ZipFiles(filename+".zip", files)
 
 	printMessage("Schema backup successfull : "+db, options.Verbosity, Info)
 }
@@ -324,10 +410,15 @@ func generateSingleFileDataBackup(options Options, db string) {
 	cmd.Wait()
 
 	printMessage("mysqldump output is : "+string(output), options.Verbosity, Info)
+
 	if string(err) != "" {
 		printMessage("mysqldump error is: "+string(err), options.Verbosity, Error)
 		os.Exit(4)
 	}
+
+	printMessage("Ziping data file : "+filename, options.Verbosity, Info)
+	files := []string{filename}
+	ZipFiles(filename+".zip", files)
 
 	printMessage("Single file data backup successfull : "+db, options.Verbosity, Info)
 }
@@ -371,7 +462,7 @@ func generateSingleFileBackup(options Options, db string) {
 		os.Exit(4)
 	}
 
-	printMessage("Ziping backup file : "+db, options.Verbosity, Info)
+	printMessage("Ziping single file : "+filename, options.Verbosity, Info)
 	files := []string{filename}
 	ZipFiles(filename+".zip", files)
 
@@ -474,19 +565,22 @@ func GetOptions() *Options {
 	flag.StringVar(&password, "password", "1234", "password of the mysql server to connect to")
 
 	var databases string
-	flag.StringVar(&databases, "databases", "", "list of databases as comma seperated values to dump")
+	flag.StringVar(&databases, "databases", "--all-databases", "List of databases as comma seperated values to dump. OBS: If not specified, --all-databases is the default")
+
+	var excludeddatabases string
+	flag.StringVar(&excludeddatabases, "excluded-databases", "mysql", "List of databases excluded from backup. OBS: Only valid if -databases is not specified")
 
 	var dbthreshold int
-	flag.IntVar(&dbthreshold, "dbthreshold", 10000000, "do not split mysqldumps, if total rowcount of tables in database is less than dbthreshold value for whole database")
+	flag.IntVar(&dbthreshold, "dbthreshold", 10000000, "Do not split mysqldumps, if total rowcount of tables in database is less than dbthreshold value for whole database")
 
 	var tablethreshold int
-	flag.IntVar(&tablethreshold, "tablethreshold", 5000000, "do not split mysqldumps, if rowcount of table is less than dbthreshold value for table")
+	flag.IntVar(&tablethreshold, "tablethreshold", 5000000, "Do not split mysqldumps, if rowcount of table is less than dbthreshold value for table")
 
 	var batchsize int
-	flag.IntVar(&batchsize, "batchsize", 1000000, "split mysqldumps in order to get each file contains batchsize number of records")
+	flag.IntVar(&batchsize, "batchsize", 1000000, "Split mysqldumps in order to get each file contains batchsize number of records")
 
 	var forcesplit bool
-	flag.BoolVar(&forcesplit, "forcesplit", false, "split schema and data dumps even if total rowcount of tables in database is less than dbthreshold value. if false one dump file will be created")
+	flag.BoolVar(&forcesplit, "forcesplit", false, "Split schema and data dumps even if total rowcount of tables in database is less than dbthreshold value. if false one dump file will be created")
 
 	var additionals string
 	flag.StringVar(&additionals, "additionals", "", "Additional parameters that will be appended to mysqldump command")
@@ -500,14 +594,14 @@ func GetOptions() *Options {
 	var outputdir string
 	flag.StringVar(&outputdir, "output-dir", "", "Default is the value of os.Getwd(). The backup files will be placed to output-dir /{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql")
 
-	var rotationdaily int
-	flag.IntVar(&rotationdaily, "rotation-daily", 5, "Number of backups on the daily rotation")
+	var dailyrotation int
+	flag.IntVar(&dailyrotation, "dailyrotation", 5, "Number of backups on the daily rotation")
 
-	var rotationweekly int
-	flag.IntVar(&rotationweekly, "rotation-weekly", 2, "Number of backups on the weekly rotation")
+	var weeklyrotation int
+	flag.IntVar(&weeklyrotation, "weeklyrotation", 2, "Number of backups on the weekly rotation")
 
-	var rotationmontly int
-	flag.IntVar(&rotationmontly, "rotation-montly", 1, "Number of backups on the montly rotation")
+	var montlyrotation int
+	flag.IntVar(&montlyrotation, "montlyrotation", 1, "Number of backups on the montly rotation")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
@@ -530,7 +624,7 @@ func GetOptions() *Options {
 		os.Exit(1)
 	}
 
-	opts := NewOptions(hostname, bind, username, password, databases, dbthreshold, tablethreshold, batchsize, forcesplit, additionals, verbosity, mysqldumppath, outputdir, defaultsProvidedByUser)
+	opts := NewOptions(hostname, bind, username, password, databases, excludeddatabases, dbthreshold, tablethreshold, batchsize, forcesplit, additionals, verbosity, mysqldumppath, outputdir, defaultsProvidedByUser, dailyrotation, weeklyrotation, montlyrotation)
 	stropts, _ := json.MarshalIndent(opts, "", "\t")
 	printMessage("Running with parameters", verbosity, Info)
 	printMessage(string(stropts), verbosity, Info)
@@ -566,6 +660,7 @@ func GetOptions() *Options {
 		cmd.Wait()
 
 		printMessage("mysqldump output is : "+string(output), opts.Verbosity, Info)
+
 		if string(err) != "" {
 			printMessage("mysqldump error is: "+string(err), opts.Verbosity, Error)
 			os.Exit(4)
