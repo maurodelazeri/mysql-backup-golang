@@ -64,16 +64,6 @@ type Options struct {
 	MontlyRotation int
 }
 
-// Config model for backup bucket rotation
-type Config struct {
-	Database struct {
-		Host     string `json:"host"`
-		Password string `json:"password"`
-	} `json:"database"`
-	Host string `json:"host"`
-	Port string `json:"port"`
-}
-
 func main() {
 	options := GetOptions()
 
@@ -531,19 +521,6 @@ func ZipFiles(filename string, files []string) error {
 	}
 
 	return nil
-}
-
-// LoadConfiguration load json file with configurations with default configuration, but gets overwrite in case of the user specify manually
-func LoadConfiguration(file string) Config {
-	var config Config
-	configFile, err := os.Open(file)
-	defer configFile.Close()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	jsonParser := json.NewDecoder(configFile)
-	jsonParser.Decode(&config)
-	return config
 }
 
 // GetOptions creates Options type from Commandline arguments
