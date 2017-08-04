@@ -4,10 +4,10 @@ import (
 	"archive/zip"
 	"database/sql"
 	"encoding/json"
+	"io/ioutil"
+	"io"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -177,46 +177,8 @@ func GetDatabaseList(hostname string, bind string, username string, password str
 	return result
 }
 
-package main
-
-import (
-	"fmt"
-)
-
-func main() {
-	var x = []int{90, 15, 81, 87, 47, 59, 81, 18, 25, 40, 56, 8}
-		var x = []int{90, 15, 81, 87, 47, 59, 81, 18, 25, 40, 56, 8}
-	
-	for i := len(x) - 1; i >= 0; i-- {
-		if x[i] % 2 == 0 {
-			x = append(x[:i], x[i+1:]...)
-		}
-	}
-	
-	fmt.Println(x)
-}
-
-
 // NewOptions returns a new Options instance.
 func NewOptions(hostname string, bind string, username string, password string, databases string, excludeddatabases string, databasetreshold int, tablethreshold int, batchsize int, forcesplit bool, additionals string, verbosity int, mysqldumppath string, outputDirectory string, defaultsProvidedByUser bool, dailyrotation int, weeklyrotation int, montlyrotation int) *Options {
-
-	excludeddbs := []string{}
-
-	if databases == "--all-databases" {
-
-		dbslist := GetDatabaseList(hostname, bind, username, password, verbosity)
-
-		databases = strings.Join(dbslist, ",")
-		fmt.Println(databases)
-
-
-		excludeddatabases = strings.Replace(excludeddatabases, " ", "", -1)
-		excludeddatabases = strings.Replace(excludeddatabases, " , ", ",", -1)
-		excludeddatabases = strings.Replace(excludeddatabases, ", ", ",", -1)
-		excludeddatabases = strings.Replace(excludeddatabases, " ,", ",", -1)
-		excludeddbs := strings.Split(excludeddatabases, ",")
-		excludeddbs = removeDuplicates(excludeddbs)
-	}
 
 	databases = strings.Replace(databases, " ", "", -1)
 	databases = strings.Replace(databases, " , ", ",", -1)
@@ -224,6 +186,26 @@ func NewOptions(hostname string, bind string, username string, password string, 
 	databases = strings.Replace(databases, " ,", ",", -1)
 	dbs := strings.Split(databases, ",")
 	dbs = removeDuplicates(dbs)
+
+	excludeddbs := []string{}
+	
+	if databases == "--all-databases" {
+
+		excludeddatabases = excludeddatabases + ",information_schema,performance_schema"
+
+		dbslist := GetDatabaseList(hostname, bind, username, password, verbosity)
+		databases = strings.Join(dbslist, ",")
+
+		excludeddatabases = strings.Replace(excludeddatabases, " ", "", -1)
+		excludeddatabases = strings.Replace(excludeddatabases, " , ", ",", -1)
+		excludeddatabases = strings.Replace(excludeddatabases, ", ", ",", -1)
+		excludeddatabases = strings.Replace(excludeddatabases, " ,", ",", -1)
+		excludeddbs := strings.Split(excludeddatabases, ",")
+		excludeddbs = removeDuplicates(excludeddbs)
+
+		// Databases to not be in the backup	
+		dbs = difference(dbslist, excludeddbs)
+	}
 
 	return &Options{
 		HostName:                 hostname,
@@ -265,6 +247,21 @@ func removeDuplicates(elements []string) []string {
 	}
 	// Return the new slice.
 	return result
+}
+
+// difference returns the elements in a that aren't in b
+func difference(a, b []string) []string {
+    mb := map[string]bool{}
+    for _, x := range b {
+        mb[x] = true
+    }
+    ab := []string{}
+    for _, x := range a {
+        if _, ok := mb[x]; !ok {
+            ab = append(ab, x)
+        }
+    }
+    return ab
 }
 
 func generateTableBackup(options Options, db string, table Table) {
@@ -568,7 +565,7 @@ func GetOptions() *Options {
 	flag.StringVar(&databases, "databases", "--all-databases", "List of databases as comma seperated values to dump. OBS: If not specified, --all-databases is the default")
 
 	var excludeddatabases string
-	flag.StringVar(&excludeddatabases, "excluded-databases", "mysql", "List of databases excluded from backup. OBS: Only valid if -databases is not specified")
+	flag.StringVar(&excludeddatabases, "excluded-databases", "", "List of databases excluded to be excluded. OBS: Only valid if -databases is not specified")
 
 	var dbthreshold int
 	flag.IntVar(&dbthreshold, "dbthreshold", 10000000, "Do not split mysqldumps, if total rowcount of tables in database is less than dbthreshold value for whole database")
@@ -595,13 +592,13 @@ func GetOptions() *Options {
 	flag.StringVar(&outputdir, "output-dir", "", "Default is the value of os.Getwd(). The backup files will be placed to output-dir /{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql")
 
 	var dailyrotation int
-	flag.IntVar(&dailyrotation, "dailyrotation", 5, "Number of backups on the daily rotation")
+	flag.IntVar(&dailyrotation, "daily-rotation", 5, "Number of backups on the daily rotation")
 
 	var weeklyrotation int
-	flag.IntVar(&weeklyrotation, "weeklyrotation", 2, "Number of backups on the weekly rotation")
+	flag.IntVar(&weeklyrotation, "weekly-rotation", 2, "Number of backups on the weekly rotation")
 
 	var montlyrotation int
-	flag.IntVar(&montlyrotation, "montlyrotation", 1, "Number of backups on the montly rotation")
+	flag.IntVar(&montlyrotation, "montly-rotation", 1, "Number of backups on the montly rotation")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
