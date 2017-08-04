@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -542,7 +543,7 @@ func getTotalRowCount(tables []Table) int {
 	return result
 }
 
-// Compress compresses one or many files into a single tar.gz archive file
+// Compress compresses files into tar.gz file
 func Compress(tw *tar.Writer, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
@@ -573,6 +574,29 @@ func Compress(tw *tar.Writer, path string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// ListFiles give a Array of files in a given path
+func ListFiles(path string) []string {
+
+	var result []string
+
+	err := filepath.Walk(os.Args[1], func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		//fmt.Println("path:", path, "FileInfo.Name:", info.Name())
+		result = append(result, path)
+		return nil
+	})
+
+	if err != nil {
+		printMessage("Problems listing files in the specified directory: "+path, 2, 1)
+		os.Exit(4)
+		return nil
+	}
+
 	return nil
 }
 
