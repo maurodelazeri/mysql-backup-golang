@@ -1,13 +1,14 @@
 package main
 
 import (
-	"archive/zip"
+	"archive/tar"
+	"compress/gzip"
 	"database/sql"
 	"encoding/json"
-	"io/ioutil"
-	"io"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -178,7 +179,7 @@ func NewOptions(hostname string, bind string, username string, password string, 
 	dbs = removeDuplicates(dbs)
 
 	excludeddbs := []string{}
-	
+
 	if databases == "--all-databases" {
 
 		excludeddatabases = excludeddatabases + ",information_schema,performance_schema"
@@ -193,7 +194,7 @@ func NewOptions(hostname string, bind string, username string, password string, 
 		excludeddbs := strings.Split(excludeddatabases, ",")
 		excludeddbs = removeDuplicates(excludeddbs)
 
-		// Databases to not be in the backup	
+		// Databases to not be in the backup
 		dbs = difference(dbslist, excludeddbs)
 	}
 
@@ -241,17 +242,17 @@ func removeDuplicates(elements []string) []string {
 
 // difference returns the elements in a that aren't in b
 func difference(a, b []string) []string {
-    mb := map[string]bool{}
-    for _, x := range b {
-        mb[x] = true
-    }
-    ab := []string{}
-    for _, x := range a {
-        if _, ok := mb[x]; !ok {
-            ab = append(ab, x)
-        }
-    }
-    return ab
+	mb := map[string]bool{}
+	for _, x := range b {
+		mb[x] = true
+	}
+	ab := []string{}
+	for _, x := range a {
+		if _, ok := mb[x]; !ok {
+			ab = append(ab, x)
+		}
+	}
+	return ab
 }
 
 func generateTableBackup(options Options, db string, table Table) {
@@ -302,9 +303,28 @@ func generateTableBackup(options Options, db string, table Table) {
 			os.Exit(4)
 		}
 
-		printMessage("Ziping table file : "+filename, options.Verbosity, Info)
-		files := []string{filename}
-		ZipFiles(filename+".zip", files)
+		// Compressing
+		printMessage("Compressing table file : "+filename, options.Verbosity, Info)
+
+		// set up the output file
+		file, errcreate := os.Create(filename + ".tar.gz")
+
+		if errcreate != nil {
+			printMessage("error to create a compressed file: "+filename, options.Verbosity, Error)
+			os.Exit(4)
+		}
+
+		defer file.Close()
+		// set up the gzip writer
+		gw := gzip.NewWriter(file)
+		defer gw.Close()
+		tw := tar.NewWriter(gw)
+		defer tw.Close()
+
+		if errcompress := Compress(tw, filename); errcompress != nil {
+			printMessage("error to compress file: "+filename, options.Verbosity, Error)
+			os.Exit(4)
+		}
 
 		index++
 	}
@@ -353,9 +373,28 @@ func generateSchemaBackup(options Options, db string) {
 		os.Exit(4)
 	}
 
-	printMessage("Ziping schema file : "+filename, options.Verbosity, Info)
-	files := []string{filename}
-	ZipFiles(filename+".zip", files)
+	// Compressing
+	printMessage("Compressing table file : "+filename, options.Verbosity, Info)
+
+	// set up the output file
+	file, errcreate := os.Create(filename + ".tar.gz")
+
+	if errcreate != nil {
+		printMessage("error to create a compressed file: "+filename, options.Verbosity, Error)
+		os.Exit(4)
+	}
+
+	defer file.Close()
+	// set up the gzip writer
+	gw := gzip.NewWriter(file)
+	defer gw.Close()
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	if errcompress := Compress(tw, filename); errcompress != nil {
+		printMessage("error to compress file: "+filename, options.Verbosity, Error)
+		os.Exit(4)
+	}
 
 	printMessage("Schema backup successfull : "+db, options.Verbosity, Info)
 }
@@ -403,9 +442,28 @@ func generateSingleFileDataBackup(options Options, db string) {
 		os.Exit(4)
 	}
 
-	printMessage("Ziping data file : "+filename, options.Verbosity, Info)
-	files := []string{filename}
-	ZipFiles(filename+".zip", files)
+	// Compressing
+	printMessage("Compressing table file : "+filename, options.Verbosity, Info)
+
+	// set up the output file
+	file, errcreate := os.Create(filename + ".tar.gz")
+
+	if errcreate != nil {
+		printMessage("error to create a compressed file: "+filename, options.Verbosity, Error)
+		os.Exit(4)
+	}
+
+	defer file.Close()
+	// set up the gzip writer
+	gw := gzip.NewWriter(file)
+	defer gw.Close()
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	if errcompress := Compress(tw, filename); errcompress != nil {
+		printMessage("error to compress file: "+filename, options.Verbosity, Error)
+		os.Exit(4)
+	}
 
 	printMessage("Single file data backup successfull : "+db, options.Verbosity, Info)
 }
@@ -449,9 +507,28 @@ func generateSingleFileBackup(options Options, db string) {
 		os.Exit(4)
 	}
 
-	printMessage("Ziping single file : "+filename, options.Verbosity, Info)
-	files := []string{filename}
-	ZipFiles(filename+".zip", files)
+	// Compressing
+	printMessage("Compressing table file : "+filename, options.Verbosity, Info)
+
+	// set up the output file
+	file, errcreate := os.Create(filename + ".tar.gz")
+
+	if errcreate != nil {
+		printMessage("error to create a compressed file: "+filename, options.Verbosity, Error)
+		os.Exit(4)
+	}
+
+	defer file.Close()
+	// set up the gzip writer
+	gw := gzip.NewWriter(file)
+	defer gw.Close()
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	if errcompress := Compress(tw, filename); errcompress != nil {
+		printMessage("error to compress file: "+filename, options.Verbosity, Error)
+		os.Exit(4)
+	}
 
 	printMessage("Single file backup successfull : "+db, options.Verbosity, Info)
 }
@@ -465,61 +542,37 @@ func getTotalRowCount(tables []Table) int {
 	return result
 }
 
-// ZipFiles compresses one or many files into a single zip archive file
-func ZipFiles(filename string, files []string) error {
-
-	newfile, err := os.Create(filename)
+// Compress compresses one or many files into a single tar.gz archive file
+func Compress(tw *tar.Writer, path string) error {
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
-	defer newfile.Close()
-
-	zipWriter := zip.NewWriter(newfile)
-	defer zipWriter.Close()
-
-	// Add files to zip
-	for _, file := range files {
-
-		zipfile, err := os.Open(file)
-		if err != nil {
+	defer file.Close()
+	if stat, err := file.Stat(); err == nil {
+		// now lets create the header as needed for this file within the tarball
+		header := new(tar.Header)
+		header.Name = path
+		header.Size = stat.Size()
+		header.Mode = int64(stat.Mode())
+		header.ModTime = stat.ModTime()
+		// write the header to the tarball archive
+		if err := tw.WriteHeader(header); err != nil {
 			return err
 		}
-		defer zipfile.Close()
-
-		// Get the file information
-		info, err := zipfile.Stat()
-		if err != nil {
-			return err
-		}
-
-		header, err := zip.FileInfoHeader(info)
-		if err != nil {
-			return err
-		}
-
-		// Change to deflate to gain better compression
-		// see http://golang.org/pkg/archive/zip/#pkg-constants
-		header.Method = zip.Deflate
-
-		writer, err := zipWriter.CreateHeader(header)
-		if err != nil {
-			return err
-		}
-		_, err = io.Copy(writer, zipfile)
-		if err != nil {
+		// copy the file data to the tarball
+		if _, err := io.Copy(tw, file); err != nil {
 			return err
 		}
 
 		// Removing the original file after zipping it
-		err = os.Remove(file)
+		err = os.Remove(path)
 
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
-
 	}
-
 	return nil
 }
 
