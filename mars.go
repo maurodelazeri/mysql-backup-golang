@@ -275,8 +275,8 @@ func generateTableBackup(options Options, db string, table Table) {
 			args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 		}
 
-		timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
-		filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02_15:04:05"), fmt.Sprintf("%s_%s%d_%s.sql", db, table.TableName, index, timestamp))
+		timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
+		filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s%d_%s.sql", db, table.TableName, index, timestamp))
 		_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 		args = append(args, fmt.Sprintf("-r%s", filename))
@@ -347,8 +347,8 @@ func generateSchemaBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
-	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
-	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02_15:04:05"), fmt.Sprintf("%s_%s_%s.sql", db, "SCHEMA", timestamp))
+	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
+	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "SCHEMA", timestamp))
 	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 	args = append(args, fmt.Sprintf("-r%s", filename))
@@ -416,8 +416,8 @@ func generateSingleFileDataBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
-	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
-	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02_15:04:05"), fmt.Sprintf("%s_%s_%s.sql", db, "DATA", timestamp))
+	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
+	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "DATA", timestamp))
 	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 	args = append(args, fmt.Sprintf("-r%s", filename))
@@ -481,8 +481,8 @@ func generateSingleFileBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
-	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02_15:04:05"), "-", "", -1), ":", "", -1)
-	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02_15:04:05"), fmt.Sprintf("%s_%s_%s.sql", db, "ALL", timestamp))
+	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
+	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "ALL", timestamp))
 	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 	args = append(args, fmt.Sprintf("-r%s", filename))
