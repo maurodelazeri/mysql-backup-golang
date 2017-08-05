@@ -100,6 +100,9 @@ func main() {
 		printMessage("Processing done for database : "+db, options.Verbosity, Info)
 	}
 
+	// Backups retentions validation
+	BackupRotation(*options)
+
 }
 
 // NewTable returns a new Table instance.
@@ -275,8 +278,9 @@ func generateTableBackup(options Options, db string, table Table) {
 			args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 		}
 
+		t := time.Now()
 		timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
-		filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s%d_%s.sql", db, table.TableName, index, timestamp))
+		filename := path.Join(options.OutputDirectory, "daily", t.Format("2006-01-02"), db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s%d_%s.sql", db, table.TableName, index, timestamp))
 		_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 		args = append(args, fmt.Sprintf("-r%s", filename))
@@ -347,8 +351,9 @@ func generateSchemaBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
+	t := time.Now()
 	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
-	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "SCHEMA", timestamp))
+	filename := path.Join(options.OutputDirectory, "daily", t.Format("2006-01-02"), db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "SCHEMA", timestamp))
 	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 	args = append(args, fmt.Sprintf("-r%s", filename))
@@ -416,8 +421,9 @@ func generateSingleFileDataBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
+	t := time.Now()
 	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
-	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "DATA", timestamp))
+	filename := path.Join(options.OutputDirectory, "daily", t.Format("2006-01-02"), db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "DATA", timestamp))
 	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 	args = append(args, fmt.Sprintf("-r%s", filename))
@@ -481,8 +487,9 @@ func generateSingleFileBackup(options Options, db string) {
 		args = append(args, strings.Split(options.AdditionalMySQLDumpArgs, " ")...)
 	}
 
+	t := time.Now()
 	timestamp := strings.Replace(strings.Replace(options.ExecutionStartDate.Format("2006-01-02"), "-", "", -1), ":", "", -1)
-	filename := path.Join(options.OutputDirectory, "daily", db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "ALL", timestamp))
+	filename := path.Join(options.OutputDirectory, "daily", t.Format("2006-01-02"), db+"-"+options.ExecutionStartDate.Format("2006-01-02"), fmt.Sprintf("%s_%s_%s.sql", db, "ALL", timestamp))
 	_ = os.Mkdir(path.Dir(filename), os.ModePerm)
 
 	args = append(args, fmt.Sprintf("-r%s", filename))
@@ -578,26 +585,146 @@ func Compress(tw *tar.Writer, path string) error {
 }
 
 // ListFiles give a Array of files in a given path
-func ListFiles(path string) []string {
-
-	var result []string
-
-	err := filepath.Walk(os.Args[1], func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
+func ListFiles(searchDir string) []string {
+	fileList := []string{}
+	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+		if path != "daily" && path != "weekly" && path != "monthly" {
+			fileList = append(fileList, path)
 		}
-		//fmt.Println("path:", path, "FileInfo.Name:", info.Name())
-		result = append(result, path)
 		return nil
 	})
+	return fileList
+}
 
+// BackupRotation execute a rotation of file, daily,weekly and monthly
+func BackupRotation(options Options) {
+
+	t := time.Now()
+
+	//month
+	if options.MontlyRotation > 0 {
+		month := ListFiles(options.OutputDirectory + "/monthly")
+		if len(month) == 0 {
+			CopyDir(options.OutputDirectory+"/daily/"+t.Format("2006-01-02"), options.OutputDirectory+"/monthly/"+t.Format("2006-01-02"))
+		}
+
+	}
+	//week
+	if options.WeeklyRotation > 0 {
+		month := ListFiles(options.OutputDirectory + "/weekly")
+		if len(month) == 0 {
+		}
+
+	}
+	//day
+	if options.DailyRotation > 0 {
+		month := ListFiles(options.OutputDirectory + "/daily")
+		if len(month) == 0 {
+		}
+
+	}
+}
+
+// CopyFile copies the contents of the file named src to the file named
+// by dst. The file will be created if it does not already exist. If the
+// destination file exists, all it's contents will be replaced by the contents
+// of the source file. The file mode will be copied from the source and
+// the copied data is synced/flushed to stable storage.
+func CopyFile(src, dst string) (err error) {
+	in, err := os.Open(src)
 	if err != nil {
-		printMessage("Problems listing files in the specified directory: "+path, 2, 1)
-		os.Exit(4)
-		return nil
+		return
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return
+	}
+	defer func() {
+		if e := out.Close(); e != nil {
+			err = e
+		}
+	}()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return
 	}
 
-	return nil
+	err = out.Sync()
+	if err != nil {
+		return
+	}
+
+	si, err := os.Stat(src)
+	if err != nil {
+		return
+	}
+	err = os.Chmod(dst, si.Mode())
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// CopyDir recursively copies a directory tree, attempting to preserve permissions.
+// Source directory must exist, destination directory must *not* exist.
+// Symlinks are ignored and skipped.
+func CopyDir(src string, dst string) (err error) {
+	src = filepath.Clean(src)
+	dst = filepath.Clean(dst)
+
+	si, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !si.IsDir() {
+		return fmt.Errorf("source is not a directory")
+	}
+
+	_, err = os.Stat(dst)
+	if err != nil && !os.IsNotExist(err) {
+		return
+	}
+	if err == nil {
+		return fmt.Errorf("destination already exists")
+	}
+
+	err = os.MkdirAll(dst, si.Mode())
+	if err != nil {
+		return
+	}
+
+	entries, err := ioutil.ReadDir(src)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			err = CopyDir(srcPath, dstPath)
+			if err != nil {
+				return
+			}
+		} else {
+			// Skip symlinks.
+			if entry.Mode()&os.ModeSymlink != 0 {
+				continue
+			}
+
+			err = CopyFile(srcPath, dstPath)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
 }
 
 // GetOptions creates Options type from Commandline arguments
@@ -674,7 +801,8 @@ func GetOptions() *Options {
 		printMessage("mysqldump binary can not be found, please specify correct value for mysqldump-path parameter", verbosity, Error)
 		os.Exit(1)
 	}
-	os.MkdirAll(outputdir+"/daily", os.ModePerm)
+	t := time.Now()
+	os.MkdirAll(outputdir+"/daily/"+t.Format("2006-01-02"), os.ModePerm)
 	os.MkdirAll(outputdir+"/weekly", os.ModePerm)
 	os.MkdirAll(outputdir+"/monthly", os.ModePerm)
 
