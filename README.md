@@ -36,11 +36,11 @@ $ go run mars.go --help
   -output-dir string
     	Default is the value of os.Getwd(). The backup files will be placed to output-dir {DATE/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql
   -daily-rotation int
-    	Number of backups on the daily rotation (default 5)      
+    	Number of backups on the daily rotation (default 5 days)      
   -weekly-rotation int
-    	Number of backups on the weekly rotation (default 2)
+    	Number of backups on the weekly rotation (default 2 weeks)
   -montly-rotation int
-    	Number of backups on the montly rotation (default 1)  
+    	Number of backups on the montly rotation (default 1 month)  
   -verbosity int
     	0 = only errors, 1 = important things, 2 = all (default 2)      
   -test
