@@ -57,8 +57,8 @@ $ go run mars.go --help
 
 ```
 **mysqldump-path (default os.Getwd() )** / `/daily/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
-**mysqldump-path (default os.Getwd() )** / `/weekly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
-**mysqldump-path (default os.Getwd() )** / `/monthly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+**mysqldump-path (default os.Getwd() )** / `/weekly/XXXX-XX-XX/{DATABASE_NAME}/{DATE}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+**mysqldump-path (default os.Getwd() )** / `/monthly/XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
 
 ```
 
