@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -147,7 +148,6 @@ func GetTables(hostname string, bind string, username string, password string, d
 func GetDatabaseList(hostname string, bind string, username string, password string, verbosity int) []string {
 	printMessage("Getting databases : "+hostname, verbosity, Info)
 
-	//	db, err := sql.Open("mysql", username+":"+password+"@tcp("+hostname+":"+bind+")")
 	db, err := sql.Open("mysql", username+":"+password+"@tcp("+hostname+":"+bind+")/mysql")
 	checkErr(err)
 
@@ -609,11 +609,13 @@ func BackupRotation(options Options) {
 
 	//month
 	if options.MontlyRotation > 0 {
-		month := ListDirs(options.OutputDirectory + "/monthly")
-		if len(month) == 1 {
+		monthly := ListDirs(options.OutputDirectory + "/monthly")
+		if len(monthly) == 1 {
 			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/monthly/"+today.Format("2006-01-02"))
 		} else {
-			for _, p := range month {
+			newest := 0
+
+			for _, p := range monthly {
 				if path.Base(p) != "monthly" {
 					file, err := os.Stat(path.Dir(p))
 					if err != nil {
@@ -621,11 +623,20 @@ func BackupRotation(options Options) {
 					}
 					diff := today.Sub(file.ModTime())
 					days := int(diff.Hours() / 24)
-					// removing old backups
-					if days > options.MontlyRotation {
-						err = os.Remove(path.Dir(p))
-						if err != nil {
-							fmt.Println(err)
+					if len(monthly) < options.MontlyRotation {
+						if newest < days {
+							newest = days
+						}
+						if newest >= options.MontlyRotation {
+							CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/monthly/"+today.Format("2006-01-02"))
+						}
+					} else {
+						// removing old backups
+						if days*30 > options.MontlyRotation {
+							err = os.Remove(path.Dir(p))
+							if err != nil {
+								fmt.Println(err)
+							}
 						}
 					}
 				}
@@ -633,12 +644,14 @@ func BackupRotation(options Options) {
 		}
 	}
 
-	//month
+	//weekly
 	if options.MontlyRotation > 0 {
 		weekly := ListDirs(options.OutputDirectory + "/weekly")
 		if len(weekly) == 1 {
 			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/weekly/"+today.Format("2006-01-02"))
 		} else {
+			newest := 0
+
 			for _, p := range weekly {
 				if path.Base(p) != "weekly" {
 					file, err := os.Stat(path.Dir(p))
@@ -647,11 +660,20 @@ func BackupRotation(options Options) {
 					}
 					diff := today.Sub(file.ModTime())
 					days := int(diff.Hours() / 24)
-					// removing old backups
-					if days > options.MontlyRotation {
-						err = os.Remove(path.Dir(p))
-						if err != nil {
-							fmt.Println(err)
+					if len(weekly) < options.MontlyRotation {
+						if newest < days {
+							newest = days
+						}
+						if newest >= options.MontlyRotation {
+							CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/weekly/"+today.Format("2006-01-02"))
+						}
+					} else {
+						// removing old backups
+						if days*7 > options.MontlyRotation {
+							err = os.Remove(path.Dir(p))
+							if err != nil {
+								fmt.Println(err)
+							}
 						}
 					}
 				}
@@ -783,6 +805,17 @@ func CopyDir(src string, dst string) (err error) {
 	}
 
 	return
+}
+
+// WriteToFile create a file and writes a specified msg to it
+func WriteToFile(filePath string, msg string) {
+	file, err := os.Create(filePath)
+	if err != nil {
+		log.Fatal("Cannot create file", err)
+	}
+	defer file.Close()
+
+	fmt.Fprintf(file, msg)
 }
 
 // GetOptions creates Options type from Commandline arguments
