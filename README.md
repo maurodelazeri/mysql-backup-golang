@@ -56,7 +56,9 @@ $ go run mars.go --help
 ### Rotation folders structure
 
 **mysqldump-path (default os.Getwd() )** / `/daily/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+
 **mysqldump-path (default os.Getwd() )** / `/weekly/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+
 **mysqldump-path (default os.Getwd() )** / `/monthly/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
 
 
