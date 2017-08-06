@@ -610,7 +610,7 @@ func BackupRotation(options Options) {
 	//month
 	if options.MontlyRotation > 0 {
 		month := ListDirs(options.OutputDirectory + "/monthly")
-		if len(month) == 0 {
+		if len(month) == 1 {
 			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/monthly/"+today.Format("2006-01-02"))
 		} else {
 			for _, p := range month {
@@ -636,7 +636,7 @@ func BackupRotation(options Options) {
 	//month
 	if options.MontlyRotation > 0 {
 		weekly := ListDirs(options.OutputDirectory + "/weekly")
-		if len(weekly) == 0 {
+		if len(weekly) == 1 {
 			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/weekly/"+today.Format("2006-01-02"))
 		} else {
 			for _, p := range weekly {
