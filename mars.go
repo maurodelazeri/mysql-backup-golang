@@ -864,13 +864,13 @@ func GetOptions() *Options {
 	flag.StringVar(&outputdir, "output-dir", "", "Default is the value of os.Getwd(). The backup files will be placed to output-dir /{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql")
 
 	var dailyrotation int
-	flag.IntVar(&dailyrotation, "daily-rotation", 5, "Number of backups on the daily rotation")
+	flag.IntVar(&dailyrotation, "daily-rotation", 5, "Number of backups on the daily rotation. (note: this is the amount of files)")
 
 	var weeklyrotation int
-	flag.IntVar(&weeklyrotation, "weekly-rotation", 2, "Number of backups on the weekly rotation")
+	flag.IntVar(&weeklyrotation, "weekly-rotation", 2, "Number of backups on the weekly rotation. (note: this is the amount of files)")
 
 	var montlyrotation int
-	flag.IntVar(&montlyrotation, "montly-rotation", 1, "Number of backups on the montly rotation")
+	flag.IntVar(&montlyrotation, "montly-rotation", 1, "Number of backups on the montly rotation. (note: this is the amount of files)")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
