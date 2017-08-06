@@ -62,12 +62,12 @@ type Options struct {
 	DefaultsProvidedByUser bool
 	ExecutionStartDate     time.Time
 
-	DailyRotation       int
-	DailyRotationFiles  int
-	WeeklyRotation      int
-	WeeklyRotationFiles int
-	MontlyRotation      int
-	MontlyRotationFiles int
+	DailyRotation        int
+	DailyRotationFiles   int
+	WeeklyRotation       int
+	WeeklyRotationFiles  int
+	MonthlyRotation      int
+	MonthlyRotationFiles int
 }
 
 func main() {
@@ -176,7 +176,7 @@ func GetDatabaseList(hostname string, bind string, username string, password str
 }
 
 // NewOptions returns a new Options instance.
-func NewOptions(hostname string, bind string, username string, password string, databases string, excludeddatabases string, databasetreshold int, tablethreshold int, batchsize int, forcesplit bool, additionals string, verbosity int, mysqldumppath string, outputDirectory string, defaultsProvidedByUser bool, dailyrotation int, dailyrotationfiles int, weeklyrotation int, weeklyrotationfiles int, montlyrotation int, montlyrotationfiles int) *Options {
+func NewOptions(hostname string, bind string, username string, password string, databases string, excludeddatabases string, databasetreshold int, tablethreshold int, batchsize int, forcesplit bool, additionals string, verbosity int, mysqldumppath string, outputDirectory string, defaultsProvidedByUser bool, dailyrotation int, dailyrotationfiles int, weeklyrotation int, weeklyrotationfiles int, monthlyrotation int, monthlyrotationfiles int) *Options {
 
 	databases = strings.Replace(databases, " ", "", -1)
 	databases = strings.Replace(databases, " , ", ",", -1)
@@ -226,8 +226,8 @@ func NewOptions(hostname string, bind string, username string, password string, 
 		DailyRotationFiles:       dailyrotationfiles,
 		WeeklyRotation:           weeklyrotation,
 		WeeklyRotationFiles:      weeklyrotationfiles,
-		MontlyRotation:           montlyrotation,
-		MontlyRotationFiles:      montlyrotationfiles,
+		MonthlyRotation:          monthlyrotation,
+		MonthlyRotationFiles:     monthlyrotationfiles,
 	}
 }
 
@@ -614,7 +614,7 @@ func BackupRotation(options Options) {
 	today := time.Now()
 
 	//month
-	if options.MontlyRotation > 0 {
+	if options.MonthlyRotation > 0 {
 		monthly := ListDirs(options.OutputDirectory + "/monthly")
 		if len(monthly) == 1 {
 			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/monthly/"+today.Format("2006-01-02"))
@@ -629,13 +629,13 @@ func BackupRotation(options Options) {
 					}
 					diff := today.Sub(file.ModTime())
 					days := int(diff.Hours() / 24)
-					if (len(monthly) - 1) < options.MontlyRotationFiles {
+					if (len(monthly) - 1) < options.MonthlyRotationFiles {
 						if newestFile < days {
 							newestFile = days
 						}
 					} else {
 						// removing old backups
-						if days > options.MontlyRotation*30 {
+						if days > options.MonthlyRotation*30 {
 							err = os.Remove(path.Dir(p))
 							if err != nil {
 								fmt.Println(err)
@@ -651,7 +651,7 @@ func BackupRotation(options Options) {
 	}
 
 	//weekly
-	if options.MontlyRotation > 0 {
+	if options.MonthlyRotation > 0 {
 		weekly := ListDirs(options.OutputDirectory + "/weekly")
 		if len(weekly) == 1 {
 			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/weekly/"+today.Format("2006-01-02"))
@@ -890,11 +890,11 @@ func GetOptions() *Options {
 	var weeklyrotationfiles int
 	flag.IntVar(&weeklyrotationfiles, "weekly-rotation-files", 2, "Number of files on the weekly retention")
 
-	var montlyrotation int
-	flag.IntVar(&montlyrotation, "montly-rotation", 1, "Number of months of retention")
+	var monthlyrotation int
+	flag.IntVar(&monthlyrotation, "monthly-rotation", 1, "Number of months of retention")
 
-	var montlyrotationfiles int
-	flag.IntVar(&montlyrotationfiles, "montly-rotation-files", 1, "Number of files on the montly retention")
+	var monthlyrotationfiles int
+	flag.IntVar(&monthlyrotationfiles, "monthly-rotation-files", 1, "Number of files on the monthly retention")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
@@ -921,7 +921,7 @@ func GetOptions() *Options {
 	os.MkdirAll(outputdir+"/weekly", os.ModePerm)
 	os.MkdirAll(outputdir+"/monthly", os.ModePerm)
 
-	opts := NewOptions(hostname, bind, username, password, databases, excludeddatabases, dbthreshold, tablethreshold, batchsize, forcesplit, additionals, verbosity, mysqldumppath, outputdir, defaultsProvidedByUser, dailyrotation, dailyrotationfiles, weeklyrotation, weeklyrotationfiles, montlyrotation, montlyrotationfiles)
+	opts := NewOptions(hostname, bind, username, password, databases, excludeddatabases, dbthreshold, tablethreshold, batchsize, forcesplit, additionals, verbosity, mysqldumppath, outputdir, defaultsProvidedByUser, dailyrotation, dailyrotationfiles, weeklyrotation, weeklyrotationfiles, monthlyrotation, monthlyrotationfiles)
 	stropts, _ := json.MarshalIndent(opts, "", "\t")
 	printMessage("Running with parameters", verbosity, Info)
 	printMessage(string(stropts), verbosity, Info)
