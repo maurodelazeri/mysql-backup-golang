@@ -37,16 +37,10 @@ $ go run mars.go --help
     	Default is the value of os.Getwd(). The backup files will be placed to output-dir {DATE/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql
   -daily-rotation int
     	Number of days of retention (default 5)   	
-  -daily-rotation-files int
-    	Number of files on the daily retention (default 5)   	
   -weekly-rotation int
     	Number of weeks of retention (default 2)
-  -weekly-rotation-files int
-    	Number of files on the weekly retention (default 2)
   -monthly-rotation int
-    	Number of months of retention (default 1)
-  -monthly-rotation-files int
-    	Number of files on the monthly retention (default 1)       
+    	Number of months of retention (default 1) 
   -verbosity int
     	0 = only errors, 1 = important things, 2 = all (default 2)      
   -test
@@ -87,11 +81,8 @@ Running with parameters
 	"DefaultsProvidedByUser": true,
 	"ExecutionStartDate": "2017-08-05T22:39:26.473773337-04:00",
 	"DailyRotation": 5,
-	"DailyRotationFiles": 5,
 	"WeeklyRotation": 2,
-	"WeeklyRotationFiles": 2,
 	"MonthlyRotation": 1,
-	"MonthlyRotationFiles": 1
 }
 Running on operating system : linux
 Processing Database : mysql
