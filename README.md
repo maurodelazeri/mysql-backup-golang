@@ -38,7 +38,7 @@ $ go run mars.go --help
   -daily-rotation int
     	Number of files on the daily retention (default 5)   	
   -weekly-rotation int
-    	Number of weekly of retention (default 2)
+    	Number of weeks of retention (default 2)
   -weekly-rotation-files int
     	Number of files on the weekly retention (default 2)
   -montly-rotation int
