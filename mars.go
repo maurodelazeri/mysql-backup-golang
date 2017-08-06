@@ -584,45 +584,103 @@ func Compress(tw *tar.Writer, path string) error {
 	return nil
 }
 
-// ListFiles give a Array of files in a given path
-func ListFiles(searchDir string) []string {
-	fileList := []string{}
-	filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
-		if path != "daily" && path != "weekly" && path != "monthly" {
-			fileList = append(fileList, path)
+// ListDirs give a Array of folders in a given path
+func ListDirs(rootpath string) []string {
+
+	list := make([]string, 0, 10)
+
+	err := filepath.Walk(rootpath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			list = append(list, path)
 		}
+
 		return nil
 	})
-	return fileList
+	if err != nil {
+		fmt.Printf("walk error [%v]\n", err)
+	}
+	return list
 }
 
 // BackupRotation execute a rotation of file, daily,weekly and monthly
 func BackupRotation(options Options) {
 
-	t := time.Now()
+	today := time.Now()
 
 	//month
 	if options.MontlyRotation > 0 {
-		month := ListFiles(options.OutputDirectory + "/monthly")
+		month := ListDirs(options.OutputDirectory + "/monthly")
 		if len(month) == 0 {
-			CopyDir(options.OutputDirectory+"/daily/"+t.Format("2006-01-02"), options.OutputDirectory+"/monthly/"+t.Format("2006-01-02"))
+			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/monthly/"+today.Format("2006-01-02"))
+		} else {
+			for _, p := range month {
+				if path.Base(p) != "monthly" {
+					file, err := os.Stat(path.Dir(p))
+					if err != nil {
+						fmt.Println(err)
+					}
+					diff := today.Sub(file.ModTime())
+					days := int(diff.Hours() / 24)
+					// removing old backups
+					if days > options.MontlyRotation {
+						err = os.Remove(path.Dir(p))
+						if err != nil {
+							fmt.Println(err)
+						}
+					}
+				}
+			}
 		}
-
 	}
-	//week
-	if options.WeeklyRotation > 0 {
-		month := ListFiles(options.OutputDirectory + "/weekly")
-		if len(month) == 0 {
+
+	//month
+	if options.MontlyRotation > 0 {
+		weekly := ListDirs(options.OutputDirectory + "/weekly")
+		if len(weekly) == 0 {
+			CopyDir(options.OutputDirectory+"/daily/"+today.Format("2006-01-02"), options.OutputDirectory+"/weekly/"+today.Format("2006-01-02"))
+		} else {
+			for _, p := range weekly {
+				if path.Base(p) != "weekly" {
+					file, err := os.Stat(path.Dir(p))
+					if err != nil {
+						fmt.Println(err)
+					}
+					diff := today.Sub(file.ModTime())
+					days := int(diff.Hours() / 24)
+					// removing old backups
+					if days > options.MontlyRotation {
+						err = os.Remove(path.Dir(p))
+						if err != nil {
+							fmt.Println(err)
+						}
+					}
+				}
+			}
 		}
-
 	}
-	//day
-	if options.DailyRotation > 0 {
-		month := ListFiles(options.OutputDirectory + "/daily")
-		if len(month) == 0 {
+
+	//daily
+	if options.MontlyRotation > 0 {
+		daily := ListDirs(options.OutputDirectory + "/daily")
+		for _, p := range daily {
+			if path.Base(p) != "daily" {
+				file, err := os.Stat(path.Dir(p))
+				if err != nil {
+					fmt.Println(err)
+				}
+				diff := today.Sub(file.ModTime())
+				days := int(diff.Hours() / 24)
+				// removing old backups
+				if days > options.MontlyRotation {
+					err = os.Remove(path.Dir(p))
+					if err != nil {
+						fmt.Println(err)
+					}
+				}
+			}
 		}
-
 	}
+
 }
 
 // CopyFile copies the contents of the file named src to the file named
