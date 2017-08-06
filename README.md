@@ -59,3 +59,48 @@ $ go run mars.go --help
 **mysqldump-path (default os.Getwd() )** / `/montly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
 
 ```
+
+### Example
+Running a backup of only one database:
+
+$go run mars.go --databases "mysql"
+
+```
+Running with parameters
+{
+	"HostName": "localhost",
+	"Bind": "3306",
+	"UserName": "root",
+	"Password": "1234",
+	"Databases": [
+		"mysql"
+	],
+	"ExcludedDatabases": [],
+	"DatabaseRowCountTreshold": 10000000,
+	"TableRowCountTreshold": 5000000,
+	"BatchSize": 1000000,
+	"ForceSplit": false,
+	"AdditionalMySQLDumpArgs": "",
+	"Verbosity": 2,
+	"MySQLDumpPath": "/usr/bin/mysqldump",
+	"OutputDirectory": "/home/mauro/Downloads/mysql-dump-goland",
+	"DefaultsProvidedByUser": true,
+	"ExecutionStartDate": "2017-08-05T22:39:26.473773337-04:00",
+	"DailyRotation": 5,
+	"WeeklyRotation": 2,
+	"WeeklyRotationFiles": 2,
+	"MontlyRotation": 1,
+	"MontlyRotationFiles": 1
+}
+Running on operating system : linux
+Processing Database : mysql
+Getting tables for database : mysql
+30 tables retrived : mysql
+options.ForceSplit (false) && totalRowCount (2102) <= options.DatabaseRowCountTreshold (10000000)
+Generating single file backup : mysql
+mysqldump is being executed with parameters : -hlocalhost -uroot -p1234 -r/home/mauro/Downloads/mysql-dump-goland/daily/2017-08-05/mysql-2017-08-05/mysql_ALL_20170805.sql mysql
+mysqldump output is : 
+Compressing table file : /home/mauro/Downloads/mysql-dump-goland/daily/2017-08-05/mysql-2017-08-05/mysql_ALL_20170805.sql
+Single file backup successfull : mysql
+Processing done for database : mysql
+```
