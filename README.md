@@ -43,10 +43,10 @@ $ go run mars.go --help
     	Number of weeks of retention (default 2)
   -weekly-rotation-files int
     	Number of files on the weekly retention (default 2)
-  -montly-rotation int
+  -monthly-rotation int
     	Number of months of retention (default 1)
-  -montly-rotation-files int
-    	Number of files on the montly retention (default 1)       
+  -monthly-rotation-files int
+    	Number of files on the monthly retention (default 1)       
   -verbosity int
     	0 = only errors, 1 = important things, 2 = all (default 2)      
   -test
@@ -58,7 +58,7 @@ $ go run mars.go --help
 ```
 **mysqldump-path (default os.Getwd() )** / `/daily/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
 **mysqldump-path (default os.Getwd() )** / `/weekly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
-**mysqldump-path (default os.Getwd() )** / `/montly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+**mysqldump-path (default os.Getwd() )** / `/monthly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
 
 ```
 
@@ -92,8 +92,8 @@ Running with parameters
 	"DailyRotationFiles": 5,
 	"WeeklyRotation": 2,
 	"WeeklyRotationFiles": 2,
-	"MontlyRotation": 1,
-	"MontlyRotationFiles": 1
+	"MonthlyRotation": 1,
+	"MonthlyRotationFiles": 1
 }
 Running on operating system : linux
 Processing Database : mysql
