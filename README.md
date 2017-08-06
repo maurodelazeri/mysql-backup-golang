@@ -55,11 +55,11 @@ $ go run mars.go --help
 
 ### Rotation folders structure
 
-** mysqldump-path** / `/daily/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+***ysqldump-path** / **daily/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz**
 
-** mysqldump-path ** / `/weekly/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+***=mysqldump-path** / **weekly/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz**
 
-** mysqldump-path** / `/monthly/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
+**mysqldump-path** / **monthly/XXXX-XX-XX/{DATABASE_NAME}-XXXX-XX-XX/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz**
 
 
 
