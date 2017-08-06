@@ -36,11 +36,17 @@ $ go run mars.go --help
   -output-dir string
     	Default is the value of os.Getwd(). The backup files will be placed to output-dir {DATE/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.sql
   -daily-rotation int
-    	Number of backups on the daily rotation (default 5 ***numbers of files***)      
+    	Number of days of retention (default 5)   	
+  -daily-rotation-files int
+    	Number of files on the daily retention (default 5)   	
   -weekly-rotation int
-    	Number of backups on the weekly rotation (default 2 ***number of files***)
+    	Number of weeks of retention (default 2)
+  -weekly-rotation-files int
+    	Number of files on the weekly retention (default 2)
   -montly-rotation int
-    	Number of backups on the montly rotation (default 1 ***number of files***)  
+    	Number of months of retention (default 1)
+  -montly-rotation-files int
+    	Number of files on the montly retention (default 1)       
   -verbosity int
     	0 = only errors, 1 = important things, 2 = all (default 2)      
   -test
@@ -54,4 +60,50 @@ $ go run mars.go --help
 **mysqldump-path (default os.Getwd() )** / `/weekly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
 **mysqldump-path (default os.Getwd() )** / `/montly/XXXX-XX-XX/{DATABASE_NAME}/{DATABASE_NAME}/{DATABASE_NAME}_{TABLENAME|SCHEMA|DATA|ALL}_{TIMESTAMP}.tar.gz`
 
+```
+
+### Example
+Running a backup of only one database:
+
+$go run mars.go --databases "mysql"
+
+```
+Running with parameters
+{
+	"HostName": "localhost",
+	"Bind": "3306",
+	"UserName": "root",
+	"Password": "1234",
+	"Databases": [
+		"mysql"
+	],
+	"ExcludedDatabases": [],
+	"DatabaseRowCountTreshold": 10000000,
+	"TableRowCountTreshold": 5000000,
+	"BatchSize": 1000000,
+	"ForceSplit": false,
+	"AdditionalMySQLDumpArgs": "",
+	"Verbosity": 2,
+	"MySQLDumpPath": "/usr/bin/mysqldump",
+	"OutputDirectory": "/home/mauro/Downloads/mysql-dump-goland",
+	"DefaultsProvidedByUser": true,
+	"ExecutionStartDate": "2017-08-05T22:39:26.473773337-04:00",
+	"DailyRotation": 5,
+	"DailyRotationFiles": 5,
+	"WeeklyRotation": 2,
+	"WeeklyRotationFiles": 2,
+	"MontlyRotation": 1,
+	"MontlyRotationFiles": 1
+}
+Running on operating system : linux
+Processing Database : mysql
+Getting tables for database : mysql
+30 tables retrived : mysql
+options.ForceSplit (false) && totalRowCount (2102) <= options.DatabaseRowCountTreshold (10000000)
+Generating single file backup : mysql
+mysqldump is being executed with parameters : -hlocalhost -uroot -p1234 -r/home/mauro/Downloads/mysql-dump-goland/daily/2017-08-05/mysql-2017-08-05/mysql_ALL_20170805.sql mysql
+mysqldump output is : 
+Compressing table file : /home/mauro/Downloads/mysql-dump-goland/daily/2017-08-05/mysql-2017-08-05/mysql_ALL_20170805.sql
+Single file backup successfull : mysql
+Processing done for database : mysql
 ```
