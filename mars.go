@@ -65,11 +65,8 @@ type Options struct {
 	ExecutionStartDate     time.Time
 
 	DailyRotation        int
-	DailyRotationFiles   int
 	WeeklyRotation       int
-	WeeklyRotationFiles  int
 	MonthlyRotation      int
-	MonthlyRotationFiles int
 }
 
 func main() {
@@ -178,7 +175,7 @@ func GetDatabaseList(hostname string, bind string, username string, password str
 }
 
 // NewOptions returns a new Options instance.
-func NewOptions(hostname string, bind string, username string, password string, databases string, excludeddatabases string, databasetreshold int, tablethreshold int, batchsize int, forcesplit bool, additionals string, verbosity int, mysqldumppath string, outputDirectory string, defaultsProvidedByUser bool, dailyrotation int, dailyrotationfiles int, weeklyrotation int, weeklyrotationfiles int, monthlyrotation int, monthlyrotationfiles int) *Options {
+func NewOptions(hostname string, bind string, username string, password string, databases string, excludeddatabases string, databasetreshold int, tablethreshold int, batchsize int, forcesplit bool, additionals string, verbosity int, mysqldumppath string, outputDirectory string, defaultsProvidedByUser bool, dailyrotation int, weeklyrotation int, monthlyrotation int) *Options {
 
 	databases = strings.Replace(databases, " ", "", -1)
 	databases = strings.Replace(databases, " , ", ",", -1)
@@ -225,11 +222,8 @@ func NewOptions(hostname string, bind string, username string, password string, 
 		DefaultsProvidedByUser:   defaultsProvidedByUser,
 		ExecutionStartDate:       timeNow,
 		DailyRotation:            dailyrotation,
-		DailyRotationFiles:       dailyrotationfiles,
 		WeeklyRotation:           weeklyrotation,
-		WeeklyRotationFiles:      weeklyrotationfiles,
 		MonthlyRotation:          monthlyrotation,
-		MonthlyRotationFiles:     monthlyrotationfiles,
 	}
 }
 
@@ -624,7 +618,7 @@ func BackupRotation(options Options) {
 					}
 					diff := timeNow.Sub(file.ModTime())
 					days := int(diff.Hours() / 24)
-					if (len(monthly) - 1) < options.MonthlyRotationFiles {
+					if (len(monthly) - 1) < options.MonthlyRotation {
 						if newestFile < days {
 							newestFile = days
 						}
@@ -661,7 +655,7 @@ func BackupRotation(options Options) {
 					}
 					diff := timeNow.Sub(file.ModTime())
 					days := int(diff.Hours() / 24)
-					if (len(weekly) - 1) < options.WeeklyRotationFiles {
+					if (len(weekly) - 1) < options.WeeklyRotation {
 						if newestFile < days {
 							newestFile = days
 						}
@@ -695,13 +689,13 @@ func BackupRotation(options Options) {
 				diff := timeNow.Sub(file.ModTime())
 				days := int(diff.Hours() / 24)
 
-				if (len(daily) - 1) < options.DailyRotationFiles {
+				if (len(daily) - 1) < options.DailyRotation {
 					if newestFile < days {
 						newestFile = days
 					}
 				} else {
 					// removing old backups
-					if days > options.DailyRotationFiles {
+					if days > options.DailyRotation {
 						err = os.Remove(path.Dir(p))
 						if err != nil {
 							fmt.Println(err)
@@ -876,20 +870,11 @@ func GetOptions() *Options {
 	var dailyrotation int
 	flag.IntVar(&dailyrotation, "daily-rotation", 5, "Number of days of retention")
 
-	var dailyrotationfiles int
-	flag.IntVar(&dailyrotationfiles, "daily-rotation-files", 5, "Number of files on the daily retention")
-
 	var weeklyrotation int
 	flag.IntVar(&weeklyrotation, "weekly-rotation", 2, "Number of weeks of retention")
 
-	var weeklyrotationfiles int
-	flag.IntVar(&weeklyrotationfiles, "weekly-rotation-files", 2, "Number of files on the weekly retention")
-
 	var monthlyrotation int
 	flag.IntVar(&monthlyrotation, "monthly-rotation", 1, "Number of months of retention")
-
-	var monthlyrotationfiles int
-	flag.IntVar(&monthlyrotationfiles, "monthly-rotation-files", 1, "Number of files on the monthly retention")
 
 	var test bool
 	flag.BoolVar(&test, "test", false, "test")
@@ -916,7 +901,7 @@ func GetOptions() *Options {
 	os.MkdirAll(outputdir+"/weekly", os.ModePerm)
 	os.MkdirAll(outputdir+"/monthly", os.ModePerm)
 
-	opts := NewOptions(hostname, bind, username, password, databases, excludeddatabases, dbthreshold, tablethreshold, batchsize, forcesplit, additionals, verbosity, mysqldumppath, outputdir, defaultsProvidedByUser, dailyrotation, dailyrotationfiles, weeklyrotation, weeklyrotationfiles, monthlyrotation, monthlyrotationfiles)
+	opts := NewOptions(hostname, bind, username, password, databases, excludeddatabases, dbthreshold, tablethreshold, batchsize, forcesplit, additionals, verbosity, mysqldumppath, outputdir, defaultsProvidedByUser, dailyrotation, weeklyrotation, monthlyrotation)
 	stropts, _ := json.MarshalIndent(opts, "", "\t")
 	printMessage("Running with parameters", verbosity, Info)
 	printMessage(string(stropts), verbosity, Info)
