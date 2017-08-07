@@ -8,7 +8,7 @@ mars is a tool for backing up multiple MySQL databases with multiples options. T
 ### Usage
 
 ```
-$ go run mars.go --help
+$ go run mars.go -help
   -hostname string
     	Hostname of the mysql server to connect to (default "localhost")
   -bind string
