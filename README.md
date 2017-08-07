@@ -57,7 +57,7 @@ $ go run mars.go --help
 ### Example
 Running a backup of only one database:
 
-$go run mars.go --databases "mysql"
+$go run mars.go -username "root" -password "123456" -databases "mysql"
 
 ```
 Running with parameters
@@ -65,7 +65,7 @@ Running with parameters
 	"HostName": "localhost",
 	"Bind": "3306",
 	"UserName": "root",
-	"Password": "1234",
+	"Password": "123456",
 	"Databases": [
 		"mysql"
 	],
