@@ -2,7 +2,7 @@ Mars
 ======
 
 ### Overview
-mars is a tool for backing up multiple MySQL databases with multiples options. The backups are outputted as a .tar.gz and are stored locally, there is also support for retention in days/weeks/months
+Mars is a tool for backing up multiple MySQL databases with multiples options. The backups are outputted as a .tar.gz and are stored locally, there is also support for retention in days/weeks/months
 
 
 ### Usage
